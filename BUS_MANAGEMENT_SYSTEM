@@ -1,0 +1,477 @@
+#include <stdio.h>
+#include <string.h>
+
+#define MAX_BUSES 50
+#define MAX_SEATS 40
+#define MAX_WAITING 50
+
+// Structure for Bus
+struct Bus {
+    int busNo;
+    char departure[30];
+    char destination[30];
+    int totalSeats;
+    int bookedSeats;
+    float fare;
+
+    // 0 = Available, 1 = Booked
+    int seatBooked[MAX_SEATS];
+};
+
+// Structure for Passenger
+struct Passenger {
+    char name[50];
+    int age;
+    int busNo;
+    int seatNo;
+};
+
+// Queue for waiting passengers
+struct Passenger waitingQueue[MAX_WAITING];
+
+int front = -1;
+int rear = -1;
+
+struct Bus buses[MAX_BUSES];
+int busCount = 0;
+
+
+// Function to add passenger to waiting queue
+void enqueue(struct Passenger p) {
+    if (rear == MAX_WAITING - 1) {
+        printf("\nWaiting queue is full!\n");
+        return;
+    }
+
+    if (front == -1)
+        front = 0;
+
+    rear++;
+    waitingQueue[rear] = p;
+
+    printf("\nPassenger added to waiting queue.\n");
+}
+
+
+// Function to remove passenger from queue
+struct Passenger dequeue() {
+    struct Passenger p;
+
+    if (front == -1 || front > rear) {
+        strcpy(p.name, "None");
+        p.age = 0;
+        p.busNo = 0;
+        p.seatNo = 0;
+        return p;
+    }
+
+    p = waitingQueue[front];
+    front++;
+
+    if (front > rear) {
+        front = -1;
+        rear = -1;
+    }
+
+    return p;
+}
+
+
+// Add a new bus
+void addBus() {
+    int i;
+
+    if (busCount == MAX_BUSES) {
+        printf("\nBus storage is full!\n");
+        return;
+    }
+
+    printf("\nEnter Bus Number: ");
+    scanf("%d", &buses[busCount].busNo);
+
+    printf("Enter Departure: ");
+    scanf("%s", buses[busCount].departure);
+
+    printf("Enter Destination: ");
+    scanf("%s", buses[busCount].destination);
+
+    printf("Enter Total Seats: ");
+    scanf("%d", &buses[busCount].totalSeats);
+
+    if (buses[busCount].totalSeats > MAX_SEATS) {
+        printf("\nMaximum %d seats are allowed.\n", MAX_SEATS);
+        return;
+    }
+
+    if (buses[busCount].totalSeats <= 0) {
+        printf("\nInvalid number of seats.\n");
+        return;
+    }
+
+    printf("Enter Fare: Rs. ");
+    scanf("%f", &buses[busCount].fare);
+
+    buses[busCount].bookedSeats = 0;
+
+    // Set all seats as available
+    for (i = 0; i < MAX_SEATS; i++) {
+        buses[busCount].seatBooked[i] = 0;
+    }
+
+    busCount++;
+
+    printf("\nBus added successfully!\n");
+}
+
+
+// Display all buses
+void displayBuses() {
+    int i;
+
+    if (busCount == 0) {
+        printf("\nNo buses available.\n");
+        return;
+    }
+
+    printf("\n-------------------------------------------------------------------------------------------\n");
+
+    printf("%-10s %-18s %-18s %-12s %-12s %-12s\n",
+           "Bus No.",
+           "Departure",
+           "Destination",
+           "Total Seats",
+           "Available",
+           "Fare");
+
+    printf("-------------------------------------------------------------------------------------------\n");
+
+    for (i = 0; i < busCount; i++) {
+        printf("%-10d %-18s %-18s %-12d %-12d Rs.%-8.2f\n",
+               buses[i].busNo,
+               buses[i].departure,
+               buses[i].destination,
+               buses[i].totalSeats,
+               buses[i].totalSeats - buses[i].bookedSeats,
+               buses[i].fare);
+    }
+
+    printf("-------------------------------------------------------------------------------------------\n");
+}
+
+
+// Display seat layout
+void displaySeats(int busIndex) {
+    int i;
+
+    printf("\n------------- SEAT LAYOUT -------------\n");
+
+    for (i = 0; i < buses[busIndex].totalSeats; i++) {
+
+        if (buses[busIndex].seatBooked[i] == 1)
+            printf("%02d [X]   ", i + 1);
+        else
+            printf("%02d [ ]   ", i + 1);
+
+        // Four seats in one row
+        if ((i + 1) % 4 == 0)
+            printf("\n");
+    }
+
+    if (buses[busIndex].totalSeats % 4 != 0)
+        printf("\n");
+
+    printf("----------------------------------------\n");
+    printf("[X] = Booked    [ ] = Available\n");
+}
+
+
+// Search bus using linear search
+void searchBus() {
+    int busNo, i, found = 0;
+
+    printf("\nEnter Bus Number to search: ");
+    scanf("%d", &busNo);
+
+    for (i = 0; i < busCount; i++) {
+
+        if (buses[i].busNo == busNo) {
+
+            printf("\nBus Found!\n");
+            printf("Bus Number: %d\n", buses[i].busNo);
+            printf("Departure: %s\n", buses[i].departure);
+            printf("Destination: %s\n", buses[i].destination);
+            printf("Total Seats: %d\n", buses[i].totalSeats);
+            printf("Available Seats: %d\n",
+                   buses[i].totalSeats - buses[i].bookedSeats);
+            printf("Fare: Rs. %.2f\n", buses[i].fare);
+
+            found = 1;
+            break;
+        }
+    }
+
+    if (!found)
+        printf("\nBus not found!\n");
+}
+
+
+// Book a seat
+void bookSeat() {
+    int busNo, i, found = 0;
+    int seatNo;
+    struct Passenger p;
+
+    printf("\nEnter Bus Number: ");
+    scanf("%d", &busNo);
+
+    for (i = 0; i < busCount; i++) {
+
+        if (buses[i].busNo == busNo) {
+
+            found = 1;
+
+            // Check if bus is full
+            if (buses[i].bookedSeats == buses[i].totalSeats) {
+
+                printf("\nBus is full!\n");
+
+                printf("Enter Passenger Name for waiting queue: ");
+                scanf("%s", p.name);
+
+                printf("Enter Passenger Age: ");
+                scanf("%d", &p.age);
+
+                p.busNo = busNo;
+                p.seatNo = 0;
+
+                enqueue(p);
+
+                break;
+            }
+
+            // Show seat layout
+            displaySeats(i);
+
+            printf("\nEnter Seat Number: ");
+            scanf("%d", &seatNo);
+
+            // Validate seat number
+            if (seatNo < 1 || seatNo > buses[i].totalSeats) {
+                printf("\nInvalid seat number!\n");
+                break;
+            }
+
+            // Check whether seat is already booked
+            if (buses[i].seatBooked[seatNo - 1] == 1) {
+                printf("\nSeat %d is already booked!\n", seatNo);
+                break;
+            }
+
+            printf("Enter Passenger Name: ");
+            scanf("%s", p.name);
+
+            printf("Enter Passenger Age: ");
+            scanf("%d", &p.age);
+
+            // Book the selected seat
+            buses[i].seatBooked[seatNo - 1] = 1;
+            buses[i].bookedSeats++;
+
+            p.busNo = busNo;
+            p.seatNo = seatNo;
+
+            printf("\n========================================\n");
+            printf("       TICKET BOOKED SUCCESSFULLY\n");
+            printf("========================================\n");
+            printf("Passenger Name : %s\n", p.name);
+            printf("Passenger Age  : %d\n", p.age);
+            printf("Bus Number     : %d\n", buses[i].busNo);
+            printf("Departure      : %s\n", buses[i].departure);
+            printf("Destination    : %s\n", buses[i].destination);
+            printf("Seat Number    : %d\n", seatNo);
+            printf("Fare           : Rs. %.2f\n", buses[i].fare);
+            printf("========================================\n");
+
+            break;
+        }
+    }
+
+    if (!found)
+        printf("\nBus not found!\n");
+}
+
+
+// Cancel booking
+void cancelBooking() {
+    int busNo, seatNo, i;
+    struct Passenger p;
+
+    printf("\nEnter Bus Number: ");
+    scanf("%d", &busNo);
+
+    for (i = 0; i < busCount; i++) {
+
+        if (buses[i].busNo == busNo) {
+
+            if (buses[i].bookedSeats == 0) {
+                printf("\nNo bookings to cancel.\n");
+                return;
+            }
+
+            displaySeats(i);
+
+            printf("\nEnter Seat Number to cancel: ");
+            scanf("%d", &seatNo);
+
+            if (seatNo < 1 || seatNo > buses[i].totalSeats) {
+                printf("\nInvalid seat number!\n");
+                return;
+            }
+
+            if (buses[i].seatBooked[seatNo - 1] == 0) {
+                printf("\nThis seat is not booked.\n");
+                return;
+            }
+
+            // Cancel selected seat
+            buses[i].seatBooked[seatNo - 1] = 0;
+            buses[i].bookedSeats--;
+
+            printf("\nBooking for Seat %d cancelled successfully.\n",
+                   seatNo);
+
+            // Give cancelled seat to first waiting passenger
+            p = dequeue();
+
+            if (strcmp(p.name, "None") != 0) {
+
+                // Only assign if waiting passenger belongs to this bus
+                if (p.busNo == busNo) {
+
+                    buses[i].seatBooked[seatNo - 1] = 1;
+                    buses[i].bookedSeats++;
+
+                    printf("\nWaiting passenger %s has been given Seat %d.\n",
+                           p.name, seatNo);
+
+                    printf("Fare: Rs. %.2f\n", buses[i].fare);
+                }
+            }
+
+            return;
+        }
+    }
+
+    printf("\nBus not found!\n");
+}
+
+
+// Sort buses by bus number
+void sortBuses() {
+    int i, j;
+    struct Bus temp;
+
+    for (i = 0; i < busCount - 1; i++) {
+
+        for (j = 0; j < busCount - i - 1; j++) {
+
+            if (buses[j].busNo > buses[j + 1].busNo) {
+
+                temp = buses[j];
+                buses[j] = buses[j + 1];
+                buses[j + 1] = temp;
+            }
+        }
+    }
+
+    printf("\nBuses sorted successfully by Bus Number.\n");
+}
+
+
+// Display waiting queue
+void displayWaitingQueue() {
+    int i;
+
+    if (front == -1) {
+        printf("\nWaiting queue is empty.\n");
+        return;
+    }
+
+    printf("\n--------- WAITING PASSENGERS ---------\n");
+
+    for (i = front; i <= rear; i++) {
+
+        printf("Name: %-15s Age: %-5d Bus No.: %-5d\n",
+               waitingQueue[i].name,
+               waitingQueue[i].age,
+               waitingQueue[i].busNo);
+    }
+
+    printf("--------------------------------------\n");
+}
+
+
+// Main function
+int main() {
+    int choice;
+
+    do {
+
+        printf("\n========================================\n");
+        printf("       BUS MANAGEMENT SYSTEM\n");
+        printf("========================================\n");
+
+        printf("1. Add Bus\n");
+        printf("2. Display All Buses\n");
+        printf("3. Search Bus\n");
+        printf("4. Book Seat\n");
+        printf("5. Cancel Booking\n");
+        printf("6. Sort Buses\n");
+        printf("7. Display Waiting Queue\n");
+        printf("8. Exit\n");
+
+        printf("\nEnter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+
+            case 1:
+                addBus();
+                break;
+
+            case 2:
+                displayBuses();
+                break;
+
+            case 3:
+                searchBus();
+                break;
+
+            case 4:
+                bookSeat();
+                break;
+
+            case 5:
+                cancelBooking();
+                break;
+
+            case 6:
+                sortBuses();
+                break;
+
+            case 7:
+                displayWaitingQueue();
+                break;
+
+            case 8:
+                printf("\nThank you for using Bus Management System!\n");
+                break;
+
+            default:
+                printf("\nInvalid choice! Please try again.\n");
+        }
+
+    } while (choice != 8);
+
+    return 0;
+}
